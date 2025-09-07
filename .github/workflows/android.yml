@@ -3,8 +3,7 @@ name: Android CI
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  workflow_dispatch:   # allows manual trigger from web UI
 
 jobs:
   build:
@@ -32,6 +31,8 @@ jobs:
           echo "APK not found!"
           ls -R app/build/outputs/apk/debug/
           exit 1
+        else
+          echo "APK successfully built!"
         fi
 
     - name: Upload APK
