@@ -3,42 +3,39 @@ name: Android APK Build
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch:  # allows manual trigger
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch: # allows manual run
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      # Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
+      # Set up JDK 17 (required for Gradle 8+)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-    - name: Grant execute permission
-      run: chmod +x gradlew
+      # Cache Gradle files for faster builds
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
-    - name: Build Debug APK
-      run: ./gradlew clean assembleDebug --stacktrace
+      # Grant permission to run Gradle
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
 
-    - name: Verify APK exists
-      run: |
-        APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
-        if [ ! -f "$APK_PATH" ]; then
-          echo "Error: APK not found!"
-          ls -R app/build/outputs/apk/debug/
-          exit 1
-        else
-          echo "APK found at $APK_PATH"
-        fi
-
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: WizBizAgent-APK
-        path: app/build/outputs/apk/debug/app-debug.apk
-        if-no-files-found: error
+      # Build Debug APK
